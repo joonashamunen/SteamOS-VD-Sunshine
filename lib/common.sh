@@ -14,7 +14,7 @@ log() {
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 
-require_root() { [ "$(id -u)" -eq 0 ] || die "This action must run as root (use sudo)."; }
+require_root() { [ "$DRY_RUN" = "1" ] || [ "$(id -u)" -eq 0 ] || die "This action must run as root (use sudo)."; }
 
 # run CMD...  — execute, or under dry-run just print.
 run() {
