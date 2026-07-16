@@ -39,6 +39,20 @@ After install, two one-time Game Mode steps remain: enable the Sunshine plugin,
 and pair Moonlight with the PIN. Everything else — including the Sunshine
 Command Preparations and update auto-heal — is configured automatically.
 
+## Security note
+
+`svd` installs a passwordless sudoers entry scoped to exactly
+`/home/deck/.local/bin/svd repair` so the auto-heal unit can repair the
+stack without a password prompt. That path is a symlink into
+`/home/deck/.local/share/svd/`, which is owned and writable by `deck`.
+In practice this means `deck` can obtain passwordless root (by editing
+the `svd` engine that `sudo svd repair` executes, then invoking it). On a
+single-user Steam Deck where the `deck` account already has full sudo
+access, this is an accepted tradeoff — it does not grant any privilege
+`deck` doesn't already have — but it should not be treated as a genuine
+privilege boundary between "deck user" and "root" on any device where
+that separation matters.
+
 ## Development
 
 - Requires bash, and for tests: [`bats-core`](https://github.com/bats-core/bats-core)
