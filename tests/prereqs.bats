@@ -1,19 +1,10 @@
 #!/usr/bin/env bats
 
 setup() {
-  source "$BATS_TEST_DIRNAME/../lib/common.sh"
+  # Do NOT source lib/common.sh: it defines a `run` function that shadows
+  # bats' built-in `run`. Stub the only helper prereqs.sh needs, then source it.
+  log() { :; }
   source "$BATS_TEST_DIRNAME/../lib/prereqs.sh"
-  # Override run function to capture status and output for bats compatibility
-  run() {
-    local output_var
-    local status_var
-    set +e
-    output_var=$( "$@" 2>&1 )
-    status_var=$?
-    set -e
-    export status="$status_var"
-    export output="$output_var"
-  }
 }
 
 @test "passes when both present" {
