@@ -28,6 +28,17 @@ Commands:
 `--dry-run` prints intended changes without mutating anything (where
 supported by the target command).
 
+## Install (Steam Deck, Desktop Mode → Konsole)
+
+    curl -fsSL https://raw.githubusercontent.com/<you>/SteamOS-VD-Sunshine/main/bootstrap.sh | bash
+
+Prerequisites (the installer checks and guides you): Decky Loader + the Decky
+Sunshine plugin, and a sudo password set for the `deck` user.
+
+After install, two one-time Game Mode steps remain: enable the Sunshine plugin,
+and pair Moonlight with the PIN. Everything else — including the Sunshine
+Command Preparations and update auto-heal — is configured automatically.
+
 ## Development
 
 - Requires bash, and for tests: [`bats-core`](https://github.com/bats-core/bats-core)
