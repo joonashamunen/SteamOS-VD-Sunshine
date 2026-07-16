@@ -30,6 +30,7 @@ heal_render_sudoers() {
 }
 
 heal_install() {
+  require_root
   local here="$1"
   log "Installing auto-heal (user unit + scoped sudoers)"
   run mkdir -p "$(dirname "$USER_UNIT")"
@@ -39,10 +40,22 @@ heal_install() {
   fi
   heal_render_unit > "$USER_UNIT"
   chown -R deck:deck "$(dirname "$USER_UNIT")"
-  heal_render_sudoers > "$SUDOERS"; chmod 0440 "$SUDOERS"
-  visudo -cf "$SUDOERS" >/dev/null || die "invalid sudoers file generated"
-  sudo -u deck XDG_RUNTIME_DIR=/run/user/1000 systemctl --user daemon-reload || true
-  sudo -u deck XDG_RUNTIME_DIR=/run/user/1000 systemctl --user enable svd-heal.service || true
+
+  local tmp_sudoers
+  tmp_sudoers="$(mktemp)"
+  heal_render_sudoers > "$tmp_sudoers"
+  chmod 0440 "$tmp_sudoers"
+  if ! visudo -cf "$tmp_sudoers" >/dev/null; then
+    rm -f "$tmp_sudoers"
+    die "invalid sudoers file generated"
+  fi
+  install -m 0440 -o root -g root "$tmp_sudoers" "$SUDOERS"
+  rm -f "$tmp_sudoers"
+
+  sudo -u deck XDG_RUNTIME_DIR=/run/user/1000 systemctl --user daemon-reload \
+    || log "WARNING: could not enable svd-heal.service now (no active user session?); it will be re-enabled on the next svd repair."
+  sudo -u deck XDG_RUNTIME_DIR=/run/user/1000 systemctl --user enable svd-heal.service \
+    || log "WARNING: could not enable svd-heal.service now (no active user session?); it will be re-enabled on the next svd repair."
 }
 
 # Called by the user unit on each boot.
