@@ -1,0 +1,38 @@
+#!/bin/bash
+set -euo pipefail
+HERE="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+source "$HERE/lib/common.sh"
+
+usage() {
+  cat <<EOF
+Usage: svd <command> [--dry-run] [args]
+
+Commands:
+  install         Full first-time setup (prereqs -> stack -> config -> auto-heal)
+  repair          Re-apply the full stack idempotently
+  status          Report health of each component
+  check-prereqs   Detect Decky Loader + Decky Sunshine and guide if missing
+  uninstall       Remove the stack (--purge also removes the Sunshine flatpak)
+  help            Show this message
+EOF
+}
+
+# Parse global --dry-run out of the argument list.
+ARGS=(); export DRY_RUN=0
+for a in "$@"; do
+  case "$a" in
+    --dry-run) DRY_RUN=1 ;;
+    *) ARGS+=("$a") ;;
+  esac
+done
+set -- "${ARGS[@]:-}"
+
+CMD="${1:-}"; shift || true
+case "$CMD" in
+  help|-h|--help) usage ;;
+  ""|status) [ "$CMD" = "" ] && { usage; exit 2; }
+             echo "svd status (dry-run=$DRY_RUN)"; echo "status: not yet implemented" ;;
+  install|repair|check-prereqs|uninstall)
+             echo "$CMD: not yet implemented (dry-run=$DRY_RUN)" ;;
+  *) echo "Unknown command: $CMD" >&2; usage; exit 2 ;;
+esac
