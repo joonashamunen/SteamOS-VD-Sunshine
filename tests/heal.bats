@@ -13,10 +13,10 @@ setup() {
   export SUDOERS="$BATS_TEST_TMPDIR/svd-heal.sudoers"
 }
 
-@test "heal_render_unit references svd repair" {
+@test "heal_render_unit invokes svd heal" {
   run heal_render_unit
   [ "$status" -eq 0 ]
-  [[ "$output" == *"svd repair"* ]]
+  [[ "$output" == *" heal"* ]]
   [[ "$output" == *"oneshot"* ]]
 }
 

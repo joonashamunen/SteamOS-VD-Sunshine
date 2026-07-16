@@ -18,7 +18,7 @@ After=graphical.target
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash -lc 'sudo $SVD_BIN repair'
+ExecStart=/bin/bash -lc '$SVD_BIN heal'
 
 [Install]
 WantedBy=default.target
@@ -39,7 +39,7 @@ heal_install() {
     return 0
   fi
   heal_render_unit > "$USER_UNIT"
-  chown -R deck:deck "$(dirname "$USER_UNIT")"
+  chown deck:deck "$(dirname "$USER_UNIT")" "$USER_UNIT"
 
   local tmp_sudoers
   tmp_sudoers="$(mktemp)"
@@ -63,7 +63,7 @@ heal_run() {
   local here="$1"
   if python3 "$here/helpers/build_id.py" changed "$OS_RELEASE" "$STAMP"; then
     log "SteamOS build changed (or first run) — repairing stack"
-    "$SVD_BIN" repair
+    sudo "$SVD_BIN" repair
     python3 "$here/helpers/build_id.py" current "$OS_RELEASE" > "$STAMP"
     _notify "Virtual display repaired after update"
   else

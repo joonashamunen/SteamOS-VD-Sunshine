@@ -22,6 +22,19 @@ Run on a real Steam Deck. Prereqs: Decky Loader + Decky Sunshine installed;
    entry (`grep` shows exactly one vd-connect Do), services still active.
 
 ## D. Auto-heal update-survival spike (the named risk)
+
+On boot, the `svd-heal.service` user unit runs `svd heal` (unprivileged, as
+`deck`). `heal` checks the recorded BUILD_ID against the current one; if it
+changed (or there is no stamp yet), it runs `sudo svd repair` (the one
+passwordless, scoped sudoers command), writes the new stamp, and fires a
+"repaired after update" notification. If the BUILD_ID is unchanged, heal
+exits without repairing or notifying.
+
+Note: on the very first boot after a fresh install there is no stamp on
+disk yet, so heal will treat that as "changed", run one repair (harmless
+and idempotent since the stack is already correctly configured), and then
+write the initial stamp.
+
 1. Record current: `svd repair` then `cat ~/.local/share/svd/last-build.stamp`.
 2. Simulate an update: edit the stamp to a fake older BUILD_ID
    (`echo 00000000.0 > ~/.local/share/svd/last-build.stamp`), and
