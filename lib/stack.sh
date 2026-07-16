@@ -26,7 +26,7 @@ stack_apply() {
     if [ "$DRY_RUN" = "1" ]; then
       echo "DRY-RUN would download+extract jeepney wheel into $VD_DIR/deps"
     else
-      ( cd "$VD_DIR"
+      ( cd "$VD_DIR" || exit 1
         URL=$(curl -sL https://pypi.org/pypi/jeepney/json | python3 -c \
           "import sys,json;print([u['url'] for u in json.load(sys.stdin)['urls'] if u['filename'].endswith('.whl')][0])")
         curl -sLO "$URL"

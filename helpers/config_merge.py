@@ -12,10 +12,9 @@ KEY = "global_prep_cmd"
 
 def merge_prep_cmd(text: str, do: str, undo: str) -> str:
     lines = text.splitlines()
-    out, existing, found = [], [], False
+    out, existing = [], []
     for line in lines:
         if line.strip().startswith(KEY) and "=" in line:
-            found = True
             raw = line.split("=", 1)[1].strip()
             try:
                 existing = json.loads(raw) if raw else []

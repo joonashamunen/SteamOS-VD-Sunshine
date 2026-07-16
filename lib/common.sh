@@ -6,7 +6,8 @@ SVD_LOG="${SVD_LOG:-$SVD_ROOT/svd.log}"
 DRY_RUN="${DRY_RUN:-0}"
 
 log() {
-  local msg="[$( { date '+%Y-%m-%d %H:%M:%S'; } 2>/dev/null || echo '?')] $*"
+  local msg
+  msg="[$( { date '+%Y-%m-%d %H:%M:%S'; } 2>/dev/null || echo '?')] $*"
   echo "$msg"
   mkdir -p "$(dirname "$SVD_LOG")" 2>/dev/null || true
   echo "$msg" >> "$SVD_LOG" 2>/dev/null || true

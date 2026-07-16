@@ -31,7 +31,7 @@ set -- "${ARGS[@]:-}"
 CMD="${1:-}"; shift || true
 
 # shellcheck disable=SC1090
-for m in common prereqs config stack heal uninstall; do source "$HERE/lib/$m.sh"; done
+for m in prereqs config stack heal uninstall; do source "$HERE/lib/$m.sh"; done
 
 do_repair() { stack_apply "$HERE"; config_apply "$HERE"; heal_install "$HERE"; log "Repair complete."; }
 

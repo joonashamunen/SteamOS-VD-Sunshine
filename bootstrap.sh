@@ -7,6 +7,7 @@ BIN=/home/deck/.local/bin
 
 echo "==> Downloading svd ($REPO@$REF)"
 tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
 curl -fsSL "https://github.com/$REPO/archive/$REF.tar.gz" -o "$tmp/svd.tar.gz"
 mkdir -p "$DEST" "$BIN"
 tar -xzf "$tmp/svd.tar.gz" -C "$tmp"
