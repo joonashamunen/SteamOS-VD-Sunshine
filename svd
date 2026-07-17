@@ -1,0 +1,70 @@
+#!/bin/bash
+set -euo pipefail
+HERE="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+source "$HERE/lib/common.sh"
+
+usage() {
+  cat <<EOF
+Usage: svd <command> [--dry-run] [args]
+
+Commands:
+  install         Full first-time setup (prereqs -> stack -> config -> auto-heal)
+  repair          Re-apply the full stack idempotently
+  status          Report health of each component
+  check-prereqs   Detect Decky Loader + Decky Sunshine and guide if missing
+  heal            Run the post-update auto-heal (invoked by svd-heal.service)
+  uninstall       Remove the stack (--purge also removes the Sunshine flatpak)
+  help            Show this message
+EOF
+}
+
+# Parse global --dry-run out of the argument list.
+ARGS=(); export DRY_RUN=0
+for a in "$@"; do
+  case "$a" in
+    --dry-run) DRY_RUN=1 ;;
+    *) ARGS+=("$a") ;;
+  esac
+done
+set -- "${ARGS[@]:-}"
+
+CMD="${1:-}"; shift || true
+
+# shellcheck disable=SC1090
+for m in prereqs config stack heal uninstall; do source "$HERE/lib/$m.sh"; done
+
+do_repair() { stack_apply "$HERE"; config_apply "$HERE"; heal_install "$HERE"; log "Repair complete."; }
+
+do_status() {
+  echo "svd status (dry-run=$DRY_RUN)"
+  for s in sunshineVD vd-watcher; do
+    printf '  %-12s %s\n' "$s" "$(systemctl is-active "$s" 2>/dev/null || echo inactive)"
+  done
+  flatpak info dev.lizardbyte.app.Sunshine >/dev/null 2>&1 && echo "  flatpak      installed" || echo "  flatpak      missing"
+  [ -p /root/.var/app/dev.lizardbyte.app.Sunshine/config/trigger.fifo ] && echo "  fifo         present" || echo "  fifo         missing"
+}
+
+print_checklist() {
+  cat <<'EOF'
+
+============================================================
+Install complete. Two one-time steps remain (Game Mode):
+  1. Decky (plug icon) -> Sunshine plugin -> toggle ON.
+  2. Pair Moonlight: enter the PIN via the plugin's PIN field.
+The Command Preparations were configured for you automatically.
+See docs/VERIFICATION.md to confirm a good connect.
+============================================================
+EOF
+}
+
+case "$CMD" in
+  help|-h|--help) usage ;;
+  status) do_status ;;
+  check-prereqs) check_prereqs ;;
+  install) check_prereqs || exit 1; do_repair; print_checklist ;;
+  repair) do_repair ;;
+  heal) heal_run "$HERE" ;;
+  uninstall) purge=0; [ "${1:-}" = "--purge" ] && purge=1; uninstall_apply "$purge" ;;
+  "") usage; exit 2 ;;
+  *) echo "Unknown command: $CMD" >&2; usage; exit 2 ;;
+esac
