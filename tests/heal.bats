@@ -26,3 +26,14 @@ setup() {
   [[ "$output" == *"NOPASSWD"* ]]
   [[ "$output" == *"svd repair"* ]]
 }
+
+@test "default sudoers file sorts after SteamOS's own sudoers.d entries" {
+  # sudoers: last match wins, and sudoers.d is read in lexical order. SteamOS
+  # ships wheel ("%wheel ALL=(ALL) ALL"); a file sorting before it is overridden.
+  unset SUDOERS
+  source "$BATS_TEST_DIRNAME/../lib/heal.sh"
+  name="$(basename "$SUDOERS")"
+  for shipped in no-fqdn sudo wheel wheel-prepare-oobe-test; do
+    [[ "$name" > "$shipped" ]]
+  done
+}

@@ -11,6 +11,8 @@ log() {
   echo "$msg"
   mkdir -p "$(dirname "$SVD_LOG")" 2>/dev/null || true
   echo "$msg" >> "$SVD_LOG" 2>/dev/null || true
+  # repair runs as root; keep the log writable for the unprivileged svd-heal
+  if [ "$(id -u)" -eq 0 ]; then chown deck:deck "$SVD_LOG" 2>/dev/null || true; fi
 }
 
 die() { echo "ERROR: $*" >&2; exit 1; }

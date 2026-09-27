@@ -7,7 +7,7 @@ uninstall_apply() {
   log "Uninstalling svd stack"
   run systemctl disable --now svd-watchdog sunshineVD vd-watcher 2>/dev/null || true
   run rm -f /etc/systemd/system/sunshineVD.service /etc/systemd/system/vd-watcher.service /etc/systemd/system/svd-watchdog.service
-  run rm -f /etc/sudoers.d/svd-heal
+  run rm -f /etc/sudoers.d/zz-svd-heal /etc/sudoers.d/svd-heal
   run rm -f /home/deck/.config/systemd/user/svd-heal.service
   run systemctl daemon-reload
   run sudo -u deck XDG_RUNTIME_DIR=/run/user/1000 systemctl --user disable svd-heal.service 2>/dev/null || true

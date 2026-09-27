@@ -8,7 +8,11 @@ STAMP="$SVD_ROOT/last-build.stamp"
 SVD_BIN=/home/deck/.local/bin/svd
 USER_UNIT_DIR=/home/deck/.config/systemd/user
 USER_UNIT="${USER_UNIT:-$USER_UNIT_DIR/svd-heal.service}"
-SUDOERS="${SUDOERS:-/etc/sudoers.d/svd-heal}"
+# sudoers is last-match-wins and sudoers.d is read in lexical order: SteamOS
+# ships /etc/sudoers.d/wheel ("%wheel ALL=(ALL) ALL"), which overrode a file
+# named svd-heal and made `sudo svd repair` ask for a password. Sort last.
+SUDOERS="${SUDOERS:-/etc/sudoers.d/zz-svd-heal}"
+LEGACY_SUDOERS=/etc/sudoers.d/svd-heal
 
 heal_render_unit() {
   cat <<EOF
@@ -51,6 +55,7 @@ heal_install() {
   fi
   install -m 0440 -o root -g root "$tmp_sudoers" "$SUDOERS"
   rm -f "$tmp_sudoers"
+  [ "$SUDOERS" = "$LEGACY_SUDOERS" ] || rm -f "$LEGACY_SUDOERS"
 
   sudo -u deck XDG_RUNTIME_DIR=/run/user/1000 systemctl --user daemon-reload \
     || log "WARNING: could not enable svd-heal.service now (no active user session?); it will be re-enabled on the next svd repair."
