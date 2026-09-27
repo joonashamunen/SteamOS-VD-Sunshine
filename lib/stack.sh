@@ -46,16 +46,19 @@ stack_apply() {
     fi
   fi
 
-  log "[4/6] Deploy vdctl.sh + vd-watcher.sh"
+  log "[4/6] Deploy vdctl.sh + vd-watcher.sh + vd-daemon.py"
   run install -m 0755 -o deck -g deck "$here/payload/vdctl.sh" "$VD_DIR/vdctl.sh"
   run install -m 0755 -o deck -g deck "$here/payload/vd-watcher.sh" "$VD_DIR/vd-watcher.sh"
+  run install -m 0755 -o deck -g deck "$here/payload/vd-daemon.py" "$VD_DIR/vd-daemon.py"
 
   log "[5/6] systemd units + FIFO"
   [ -p "$FIFO" ] || run mkfifo -m 600 "$FIFO"
   _write_units
   log "[6/6] Enable services"
   run systemctl daemon-reload
-  run systemctl enable --now sunshineVD vd-watcher
+  run systemctl enable sunshineVD vd-watcher
+  # restart, not just start: repair must pick up changed units/payload
+  run systemctl restart sunshineVD vd-watcher
 }
 
 _write_units() {
@@ -72,7 +75,9 @@ User=root
 Group=root
 Environment=PYTHONPATH=$VD_DIR/deps
 Environment=PYTHONUNBUFFERED=1
-ExecStart=/usr/bin/python3 $VD_DIR/src/daemon/daemon.py
+# vd-daemon.py runs upstream's daemon with its DRM-master theft neutralised
+# (gamescope aborts when its master is stolen); see payload/vd-daemon.py.
+ExecStart=/usr/bin/python3 $VD_DIR/vd-daemon.py
 Restart=always
 RestartSec=3
 TimeoutStopSec=10
