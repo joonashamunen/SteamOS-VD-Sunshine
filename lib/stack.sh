@@ -46,23 +46,24 @@ stack_apply() {
     fi
   fi
 
-  log "[4/6] Deploy vdctl.sh + vd-watcher.sh + vd-daemon.py"
+  log "[4/6] Deploy vdctl.sh + vd-watcher.sh + vd-daemon.py + sunshine-watchdog.sh"
   run install -m 0755 -o deck -g deck "$here/payload/vdctl.sh" "$VD_DIR/vdctl.sh"
   run install -m 0755 -o deck -g deck "$here/payload/vd-watcher.sh" "$VD_DIR/vd-watcher.sh"
   run install -m 0755 -o deck -g deck "$here/payload/vd-daemon.py" "$VD_DIR/vd-daemon.py"
+  run install -m 0755 -o deck -g deck "$here/payload/sunshine-watchdog.sh" "$VD_DIR/sunshine-watchdog.sh"
 
   log "[5/6] systemd units + FIFO"
   [ -p "$FIFO" ] || run mkfifo -m 600 "$FIFO"
   _write_units
   log "[6/6] Enable services"
   run systemctl daemon-reload
-  run systemctl enable sunshineVD vd-watcher
+  run systemctl enable sunshineVD vd-watcher svd-watchdog
   # restart, not just start: repair must pick up changed units/payload
-  run systemctl restart sunshineVD vd-watcher
+  run systemctl restart sunshineVD vd-watcher svd-watchdog
 }
 
 _write_units() {
-  if [ "$DRY_RUN" = "1" ]; then echo "DRY-RUN would write sunshineVD.service + vd-watcher.service"; return; fi
+  if [ "$DRY_RUN" = "1" ]; then echo "DRY-RUN would write sunshineVD.service + vd-watcher.service + svd-watchdog.service"; return; fi
   cat > /etc/systemd/system/sunshineVD.service <<EOF
 [Unit]
 Description=Sunshine Virtual Display Daemon
@@ -97,6 +98,20 @@ ExecStartPre=/bin/sh -c 'test -p $FIFO || mkfifo -m 600 $FIFO'
 ExecStart=$VD_DIR/vd-watcher.sh
 Restart=on-failure
 RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  cat > /etc/systemd/system/svd-watchdog.service <<EOF
+[Unit]
+Description=Restart Sunshine via Decky when it crashes (svd)
+After=plugin_loader.service
+
+[Service]
+Type=simple
+ExecStart=$VD_DIR/sunshine-watchdog.sh
+Restart=on-failure
+RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
