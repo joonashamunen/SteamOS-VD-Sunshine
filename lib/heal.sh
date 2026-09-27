@@ -60,9 +60,10 @@ heal_install() {
   mkdir -p "$(dirname "$USER_UNIT")"
   heal_render_user_unit > "$USER_UNIT"
   chown deck:deck "$(dirname "$USER_UNIT")" "$USER_UNIT"
-  sudo -u deck XDG_RUNTIME_DIR=/run/user/1000 systemctl --user daemon-reload \
-    && sudo -u deck XDG_RUNTIME_DIR=/run/user/1000 systemctl --user enable svd-heal.service \
-    || log "WARNING: could not enable the user check unit now (no active user session?); the next svd repair retries."
+  if ! { sudo -u deck XDG_RUNTIME_DIR=/run/user/1000 systemctl --user daemon-reload &&
+         sudo -u deck XDG_RUNTIME_DIR=/run/user/1000 systemctl --user enable svd-heal.service; }; then
+    log "WARNING: could not enable the user check unit now (no active user session?); the next svd repair retries."
+  fi
 
   rm -f "${LEGACY_SUDOERS[@]}"
 }

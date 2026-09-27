@@ -1,6 +1,6 @@
 #!/bin/bash
 set -euo pipefail
-REPO="${SVD_REPO:-<you>/SteamOS-VD-Sunshine}"
+REPO="${SVD_REPO:-joonashamunen/SteamOS-VD-Sunshine}"
 REF="${SVD_REF:-main}"
 DEST=/home/deck/.local/share/svd
 BIN=/home/deck/.local/bin

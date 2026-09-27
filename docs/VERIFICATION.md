@@ -1,6 +1,6 @@
 # On-Device Verification (per release)
 
-Run on a real Steam Deck. Prereqs: Decky Loader + Decky Sunshine installed;
+Run on real SteamOS hardware. Prereqs: Decky Loader + Decky Sunshine installed;
 `deck` sudo password set.
 
 ## A. Fresh install
@@ -42,7 +42,9 @@ to run `sudo svd repair` if the root unit has gone missing.
    `systemctl --user start svd-heal`, and `journalctl --user -u svd-heal -b`
    shows the "Run: sudo svd repair" warning; then `sudo svd repair` restores it.
 4. TRUE update test (when a real SteamOS update lands): heal runs with no
-   manual action and the stamp matches the new BUILD_ID.
+   manual action and the stamp matches the new BUILD_ID. Verified 2026-09-27
+   on a stable -> beta -> stable round trip (20260922.1 -> 20260925.101 ->
+   20260922.1): the channel switch back downgrades, and heal repaired on boot.
 
 ## E. Uninstall
 1. `sudo svd uninstall` → units/healer/daemon gone; Decky untouched.
