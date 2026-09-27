@@ -40,8 +40,18 @@ do_status() {
   for s in sunshineVD vd-watcher; do
     printf '  %-12s %s\n' "$s" "$(systemctl is-active "$s" 2>/dev/null || echo inactive)"
   done
-  flatpak info dev.lizardbyte.app.Sunshine >/dev/null 2>&1 && echo "  flatpak      installed" || echo "  flatpak      missing"
-  [ -p /root/.var/app/dev.lizardbyte.app.Sunshine/config/trigger.fifo ] && echo "  fifo         present" || echo "  fifo         missing"
+  if flatpak info dev.lizardbyte.app.Sunshine >/dev/null 2>&1; then
+    echo "  flatpak      installed $(flatpak info dev.lizardbyte.app.Sunshine | awk '/Version:/{print $2}')"
+  else
+    echo "  flatpak      missing"
+  fi
+  # The FIFO lives under /root, which deck can't read; fall back to passwordless sudo.
+  local fifo=/root/.var/app/dev.lizardbyte.app.Sunshine/config/trigger.fifo
+  if [ -r /root ]; then
+    [ -p "$fifo" ] && echo "  fifo         present" || echo "  fifo         missing"
+  elif sudo -n test -p "$fifo" 2>/dev/null; then echo "  fifo         present"
+  else echo "  fifo         unknown (run: sudo svd status)"
+  fi
 }
 
 print_checklist() {

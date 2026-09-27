@@ -14,6 +14,7 @@ uninstall_apply() {
   run rm -rf /home/deck/sunshine_virt_display
   if [ "$purge" = "1" ]; then
     log "Purging Sunshine flatpak"
+    run flatpak mask --remove dev.lizardbyte.app.Sunshine || true
     run flatpak uninstall -y dev.lizardbyte.app.Sunshine || true
   fi
   log "Uninstall complete. (Decky + Decky Sunshine left untouched.)"
