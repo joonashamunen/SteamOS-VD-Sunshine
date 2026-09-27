@@ -1,5 +1,5 @@
 import json
-from helpers.config_merge import merge_prep_cmd
+from helpers.config_merge import merge_prep_cmd, set_key
 
 DO = 'sh /root/.var/app/dev.lizardbyte.app.Sunshine/config/vd-connect.sh'
 UNDO = 'sh -c "echo disconnect > /root/.var/app/dev.lizardbyte.app.Sunshine/config/trigger.fifo"'
@@ -34,3 +34,23 @@ def test_replaces_our_entry_if_undo_changed():
     out = merge_prep_cmd(stale, DO, UNDO)
     e = _entries(out)
     assert len(e) == 1 and e[0]["undo"] == UNDO
+
+def test_set_key_adds_when_absent():
+    out = set_key("sunshine_name = deck\n", "system_tray", "disabled")
+    assert "system_tray = disabled" in out.splitlines()
+    assert "sunshine_name = deck" in out
+
+def test_set_key_replaces_existing_value():
+    out = set_key("system_tray = enabled\nport = 47989\n", "system_tray", "disabled")
+    lines = out.splitlines()
+    assert lines.count("system_tray = disabled") == 1
+    assert "system_tray = enabled" not in lines
+    assert "port = 47989" in lines
+
+def test_set_key_idempotent():
+    once = set_key("", "system_tray", "disabled")
+    assert set_key(once, "system_tray", "disabled") == once
+
+def test_set_key_does_not_match_key_prefix():
+    out = set_key("system_tray_icon = x\n", "system_tray", "disabled")
+    assert "system_tray_icon = x" in out.splitlines()

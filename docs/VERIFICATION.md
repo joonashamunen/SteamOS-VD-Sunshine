@@ -7,7 +7,7 @@ Run on a real Steam Deck. Prereqs: Decky Loader + Decky Sunshine installed;
 1. Desktop Mode → Konsole: run the bootstrap one-liner.
 2. Expect: prereq check passes, `[1/6]..[6/6]` progress, checklist printed.
 3. `svd status` → sunshineVD active, vd-watcher active, flatpak installed, fifo present.
-4. `grep global_prep_cmd /root/.var/app/dev.lizardbyte.app.Sunshine/config/sunshine.conf`
+4. `grep global_prep_cmd /root/.var/app/dev.lizardbyte.app.Sunshine/config/sunshine/sunshine.conf`
    → shows our vd-connect Do command.
 
 ## B. Streaming connect

@@ -3,6 +3,12 @@
 
 VD_DIR=/home/deck/sunshine_virt_display
 APPCFG=/root/.var/app/dev.lizardbyte.app.Sunshine/config
+VD_REF=v2.0.0   # upstream v2 daemon (socket /tmp/sunshineVD.sock); known-good on device
+# Sunshine 2026.516.143833. Newer builds (2026.914) fail KMS capture of the
+# virtual display ("Couldn't get drm fb for plane: Permission denied") -> black
+# stream. Pin this commit and mask the app so flatpak auto-updates can't move it.
+SUNSHINE_APP=dev.lizardbyte.app.Sunshine
+SUNSHINE_COMMIT=62e90ef28d2c760d77e85233e1c5754c29f56e430b726947cdd79867915901e2
 FIFO=$APPCFG/trigger.fifo
 
 stack_apply() {
@@ -11,14 +17,19 @@ stack_apply() {
 
   log "[1/6] Sunshine flatpak (root/system)"
   run flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-  if ! flatpak info dev.lizardbyte.app.Sunshine >/dev/null 2>&1; then
-    run flatpak install -y flathub dev.lizardbyte.app.Sunshine
+  if ! flatpak info "$SUNSHINE_APP" >/dev/null 2>&1; then
+    run flatpak install -y flathub "$SUNSHINE_APP"
   fi
+  if [ "$(flatpak info --show-commit "$SUNSHINE_APP" 2>/dev/null)" != "$SUNSHINE_COMMIT" ]; then
+    log "  pinning Sunshine to known-good commit ${SUNSHINE_COMMIT:0:12}"
+    run flatpak update -y --commit="$SUNSHINE_COMMIT" "$SUNSHINE_APP"
+  fi
+  flatpak mask 2>/dev/null | grep -qx "$SUNSHINE_APP" || run flatpak mask "$SUNSHINE_APP"
   run mkdir -p "$APPCFG"
 
   log "[2/6] sunshine_virt_display daemon"
   if [ ! -d "$VD_DIR/.git" ]; then
-    run sudo -u deck git clone https://github.com/frostplexx/sunshine_virt_display "$VD_DIR"
+    run sudo -u deck git clone --branch "$VD_REF" --depth 1 https://github.com/frostplexx/sunshine_virt_display "$VD_DIR"
   fi
 
   log "[3/6] Vendor jeepney into $VD_DIR/deps"
@@ -52,16 +63,19 @@ _write_units() {
   cat > /etc/systemd/system/sunshineVD.service <<EOF
 [Unit]
 Description=Sunshine Virtual Display Daemon
-After=network.target
+After=display-manager.service dbus.service
+Requires=dbus.service
 
 [Service]
 Type=simple
+User=root
+Group=root
 Environment=PYTHONPATH=$VD_DIR/deps
 Environment=PYTHONUNBUFFERED=1
-ExecStart=/usr/bin/python3 $VD_DIR/main.py
-Restart=on-failure
+ExecStart=/usr/bin/python3 $VD_DIR/src/daemon/daemon.py
+Restart=always
 RestartSec=3
-TimeoutStopSec=15
+TimeoutStopSec=10
 
 [Install]
 WantedBy=multi-user.target
