@@ -41,17 +41,14 @@ Command Preparations and update auto-heal — is configured automatically.
 
 ## Security note
 
-`svd` installs a passwordless sudoers entry scoped to exactly
-`/home/deck/.local/bin/svd repair` so the auto-heal unit can repair the
-stack without a password prompt. That path is a symlink into
-`/home/deck/.local/share/svd/`, which is owned and writable by `deck`.
-In practice this means `deck` can obtain passwordless root (by editing
-the `svd` engine that `sudo svd repair` executes, then invoking it). On a
-single-user Steam Deck where the `deck` account already has full sudo
-access, this is an accepted tradeoff — it does not grant any privilege
-`deck` doesn't already have — but it should not be treated as a genuine
-privilege boundary between "deck user" and "root" on any device where
-that separation matters.
+`svd` installs no sudoers rules. Its root pieces are systemd system units:
+`svd-heal` (repairs after SteamOS updates), `sunshineVD`, `vd-watcher` and
+`svd-watchdog`. They execute code under `/home/deck` (`~/.local/share/svd`,
+`~/sunshine_virt_display`), which is owned and writable by `deck`, so `deck`
+can get root by editing that code and rebooting. On a single-user Steam Deck
+where `deck` already has full sudo access this grants nothing new, but it is
+not a privilege boundary between `deck` and root on a device where that
+separation matters.
 
 ## Development
 

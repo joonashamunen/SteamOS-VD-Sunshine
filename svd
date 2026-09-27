@@ -12,7 +12,8 @@ Commands:
   repair          Re-apply the full stack idempotently
   status          Report health of each component
   check-prereqs   Detect Decky Loader + Decky Sunshine and guide if missing
-  heal            Run the post-update auto-heal (invoked by svd-heal.service)
+  heal            Run the post-update auto-heal (root; invoked by svd-heal.service)
+  heal-check      Warn if the root auto-heal unit is missing (user svd-heal.service)
   uninstall       Remove the stack (--purge also removes the Sunshine flatpak)
   help            Show this message
 EOF
@@ -40,6 +41,7 @@ do_status() {
   for s in sunshineVD vd-watcher svd-watchdog; do
     printf '  %-12s %s\n' "$s" "$(systemctl is-active "$s" 2>/dev/null || echo inactive)"
   done
+  printf '  %-12s %s\n' svd-heal "$(systemctl is-enabled svd-heal 2>/dev/null || echo missing)"
   if flatpak info dev.lizardbyte.app.Sunshine >/dev/null 2>&1; then
     echo "  flatpak      installed $(flatpak info dev.lizardbyte.app.Sunshine | awk '/Version:/{print $2}')"
   else
@@ -74,6 +76,7 @@ case "$CMD" in
   install) check_prereqs || exit 1; do_repair; print_checklist ;;
   repair) do_repair ;;
   heal) heal_run "$HERE" ;;
+  heal-check) heal_check ;;
   uninstall) purge=0; [ "${1:-}" = "--purge" ] && purge=1; uninstall_apply "$purge" ;;
   "") usage; exit 2 ;;
   *) echo "Unknown command: $CMD" >&2; usage; exit 2 ;;

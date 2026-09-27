@@ -17,12 +17,12 @@ setup() {
   _has_decky() { return 1; }; _has_decky_sunshine() { return 1; }
   run check_prereqs
   [ "$status" -ne 0 ]
-  [[ "$output" == *"Decky Loader"* ]]
+  [[ "$output" == *"Decky Loader"* ]] || false
 }
 
 @test "fails and guides when only plugin missing" {
   _has_decky() { return 0; }; _has_decky_sunshine() { return 1; }
   run check_prereqs
   [ "$status" -ne 0 ]
-  [[ "$output" == *"Decky Sunshine"* ]]
+  [[ "$output" == *"Decky Sunshine"* ]] || false
 }

@@ -21,32 +21,29 @@ Run on a real Steam Deck. Prereqs: Decky Loader + Decky Sunshine installed;
 1. Re-run `sudo svd repair`. Expect no errors, no duplicate global_prep_cmd
    entry (`grep` shows exactly one vd-connect Do), services still active.
 
-## D. Auto-heal update-survival spike (the named risk)
+## D. Auto-heal update survival
 
-On boot, the `svd-heal.service` user unit runs `svd heal` (unprivileged, as
-`deck`). `heal` checks the recorded BUILD_ID against the current one; if it
-changed (or there is no stamp yet), it runs `sudo svd repair` (the one
-passwordless, scoped sudoers command), writes the new stamp, and fires a
-"repaired after update" notification. If the BUILD_ID is unchanged, heal
-exits without repairing or notifying.
+On boot, the root system unit `/etc/systemd/system/svd-heal.service` runs
+`svd heal`. `heal` compares the recorded BUILD_ID
+(`~/.local/share/svd/last-build.stamp`) with the current one; if it changed
+(or there is no stamp yet) it runs a full repair as root and writes the new
+stamp. No sudo is involved: a real SteamOS update (20260922.1 -> 20260925.101)
+reset `/etc/sudoers.d` but kept `/etc/systemd/system`. The user unit
+`svd-heal.service` (in /home) only runs `svd heal-check`, which logs a warning
+to run `sudo svd repair` if the root unit has gone missing.
 
-Note: on the very first boot after a fresh install there is no stamp on
-disk yet, so heal will treat that as "changed", run one repair (harmless
-and idempotent since the stack is already correctly configured), and then
-write the initial stamp.
-
-1. Record current: `svd repair` then `cat ~/.local/share/svd/last-build.stamp`.
-2. Simulate an update: edit the stamp to a fake older BUILD_ID
-   (`echo 00000000.0 > ~/.local/share/svd/last-build.stamp`), and
-   `sudo rm /etc/systemd/system/sunshineVD.service` to mimic a wiped unit.
-3. Reboot. After reaching Game Mode, `svd status` → services active again;
-   stamp updated to current BUILD_ID; a "repaired after update" notice seen.
-4. If heal did NOT fire: confirm `systemctl --user is-enabled svd-heal.service`
-   and check `~/.local/share/svd/svd.log`. Fallback per spec:
-   `~/.config/environment.d` trigger or Decky-backed trigger.
-5. TRUE update test (when a real SteamOS update lands): confirm heal fires
-   automatically with no manual action.
+1. After install: `systemctl is-enabled svd-heal` -> enabled;
+   `sudo svd status` lists `svd-heal enabled`.
+2. Simulate an update: `echo 00000000.0 > ~/.local/share/svd/last-build.stamp`,
+   then `sudo systemctl start svd-heal` (or reboot). `journalctl -u svd-heal -b`
+   shows "SteamOS build changed" and the repair; the stamp holds the current
+   BUILD_ID.
+3. Healer-missing warning: `sudo mv /etc/systemd/system/svd-heal.service /tmp/`,
+   `systemctl --user start svd-heal`, and `journalctl --user -u svd-heal -b`
+   shows the "Run: sudo svd repair" warning; then `sudo svd repair` restores it.
+4. TRUE update test (when a real SteamOS update lands): heal runs with no
+   manual action and the stamp matches the new BUILD_ID.
 
 ## E. Uninstall
-1. `sudo svd uninstall` → units/sudoers/healer/daemon gone; Decky untouched.
+1. `sudo svd uninstall` → units/healer/daemon gone; Decky untouched.
 2. `sudo svd uninstall --purge` → also removes the Sunshine flatpak.
