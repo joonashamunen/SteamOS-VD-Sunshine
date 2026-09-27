@@ -29,7 +29,18 @@ def _fake_upstream(root: Path) -> None:
         from pathlib import Path
         sys.path.insert(0, str(Path(__file__).parent.parent.parent))
         from src import display
+        import logging
+        log = logging.getLogger("fake")
+        EVENTS = []
+        def _acquire_inhibitor():
+            EVENTS.append("upstream_inhibitor"); return 3
+        def _on_sleep(going_to_sleep):
+            EVENTS.append("upstream_sleep")
         def main():
+            _acquire_inhibitor()
+            _on_sleep(True)
+            _on_sleep(False)
+            print("EVENTS=" + ",".join(EVENTS))
             display.release_crtc("card0", "HDMI-A-1")
             display.force_crtc_assignment("card0", "DP-1")
             ok, mode = display.wait_for_output_ready("card0", "DP-1", 0, 0, timeout=1.0)
@@ -59,3 +70,10 @@ def test_replacements_poke_udev_and_wait_still_works(tmp_path):
     out = _run(tmp_path)
     assert "READY=True 1920x1080" in out
     assert int(out.split("POKES=")[1]) >= 2  # one per neutralised helper
+
+
+def test_sleep_handling_and_inhibitor_are_disabled(tmp_path):
+    out = _run(tmp_path)
+    events = out.split("EVENTS=")[1].splitlines()[0]
+    assert "upstream_sleep" not in events
+    assert "upstream_inhibitor" not in events
