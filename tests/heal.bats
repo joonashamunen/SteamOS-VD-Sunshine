@@ -7,6 +7,7 @@ setup() {
   # that shadows bats' built-in `run`. Stub the only helper heal.sh needs at
   # source time, then source heal.sh (which does not define `run`).
   log() { echo "$*"; }
+  source "$BATS_TEST_DIRNAME/../lib/toggle.sh"
   source "$BATS_TEST_DIRNAME/../lib/heal.sh"
   # redirect the real system paths into the tmp sandbox
   export SYSTEM_UNIT="$BATS_TEST_TMPDIR/svd-heal.service"
@@ -49,4 +50,19 @@ setup() {
   run heal_run "$BATS_TEST_DIRNAME/.."
   [ "$status" -ne 0 ]
   [[ "$output" == *"root"* ]] || false
+}
+
+@test "heal does nothing while svd is disabled" {
+  touch "$DISABLED_FLAG"
+  run heal_run "$BATS_TEST_DIRNAME/.."
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"disabled"* ]] || false
+}
+
+@test "heal-check stays quiet while svd is disabled" {
+  touch "$DISABLED_FLAG"
+  rm -f "$SYSTEM_UNIT"
+  run heal_check
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
 }

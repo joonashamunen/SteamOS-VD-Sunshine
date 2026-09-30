@@ -46,11 +46,12 @@ stack_apply() {
     fi
   fi
 
-  log "[4/6] Deploy vdctl.sh + vd-watcher.sh + vd-daemon.py + sunshine-watchdog.sh"
+  log "[4/6] Deploy payload scripts (vdctl, vd-watcher, vd-daemon, watchdog, composite)"
   run install -m 0755 -o deck -g deck "$here/payload/vdctl.sh" "$VD_DIR/vdctl.sh"
   run install -m 0755 -o deck -g deck "$here/payload/vd-watcher.sh" "$VD_DIR/vd-watcher.sh"
   run install -m 0755 -o deck -g deck "$here/payload/vd-daemon.py" "$VD_DIR/vd-daemon.py"
   run install -m 0755 -o deck -g deck "$here/payload/sunshine-watchdog.sh" "$VD_DIR/sunshine-watchdog.sh"
+  run install -m 0755 -o deck -g deck "$here/payload/gamescope-composite.sh" "$VD_DIR/gamescope-composite.sh"
 
   log "[5/6] systemd units + FIFO"
   [ -p "$FIFO" ] || run mkfifo -m 600 "$FIFO"

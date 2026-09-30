@@ -17,7 +17,7 @@ setup() { SVD="$BATS_TEST_DIRNAME/../svd"; }
 @test "help lists all commands" {
   run "$SVD" help
   [ "$status" -eq 0 ]
-  for c in install repair status check-prereqs heal heal-check uninstall; do
+  for c in install repair status check-prereqs disable enable heal heal-check uninstall; do
     [[ "$output" == *"$c"* ]] || false
   done
 }
@@ -26,4 +26,11 @@ setup() { SVD="$BATS_TEST_DIRNAME/../svd"; }
   run "$SVD" status --dry-run
   [ "$status" -eq 0 ]
   [[ "$output" == *"dry-run"* ]] || false
+}
+
+@test "repair refuses while svd is disabled" {
+  export SVD_ROOT="$BATS_TEST_TMPDIR/svd"; mkdir -p "$SVD_ROOT"; touch "$SVD_ROOT/disabled"
+  run "$SVD" repair
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"svd enable"* ]] || false
 }

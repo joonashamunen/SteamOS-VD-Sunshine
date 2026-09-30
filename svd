@@ -12,6 +12,8 @@ Commands:
   repair          Re-apply the full stack idempotently
   status          Report health of each component
   check-prereqs   Detect Decky Loader + Decky Sunshine and guide if missing
+  disable         Switch the stack off (keeps it installed; auto-heal paused)
+  enable          Switch it back on (runs repair)
   heal            Run the post-update auto-heal (root; invoked by svd-heal.service)
   heal-check      Warn if the root auto-heal unit is missing (user svd-heal.service)
   uninstall       Remove the stack (--purge also removes the Sunshine flatpak)
@@ -32,12 +34,13 @@ set -- "${ARGS[@]:-}"
 CMD="${1:-}"; shift || true
 
 # shellcheck disable=SC1090
-for m in prereqs config stack heal uninstall; do source "$HERE/lib/$m.sh"; done
+for m in prereqs config stack toggle heal uninstall; do source "$HERE/lib/$m.sh"; done
 
 do_repair() { stack_apply "$HERE"; config_apply "$HERE"; heal_install "$HERE"; log "Repair complete."; }
 
 do_status() {
   echo "svd status (dry-run=$DRY_RUN)"
+  if svd_is_disabled; then echo "  svd          DISABLED (run: svd enable)"; fi
   for s in sunshineVD vd-watcher svd-watchdog; do
     printf '  %-12s %s\n' "$s" "$(systemctl is-active "$s" 2>/dev/null || echo inactive)"
   done
@@ -73,8 +76,12 @@ case "$CMD" in
   help|-h|--help) usage ;;
   status) do_status ;;
   check-prereqs) check_prereqs ;;
-  install) check_prereqs || exit 1; do_repair; print_checklist ;;
-  repair) do_repair ;;
+  install) check_prereqs || exit 1; rm -f "$DISABLED_FLAG"; do_repair; print_checklist ;;
+  repair)
+    if svd_is_disabled; then echo "svd is disabled; run: svd enable" >&2; exit 1; fi
+    do_repair ;;
+  disable) disable_apply ;;
+  enable) enable_apply ;;
   heal) heal_run "$HERE" ;;
   heal-check) heal_check ;;
   uninstall) purge=0; [ "${1:-}" = "--purge" ] && purge=1; uninstall_apply "$purge" ;;

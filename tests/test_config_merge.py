@@ -1,5 +1,5 @@
 import json
-from helpers.config_merge import merge_prep_cmd, set_key
+from helpers.config_merge import merge_prep_cmd, remove_prep_cmd, set_key
 
 DO = 'sh /root/.var/app/dev.lizardbyte.app.Sunshine/config/vd-connect.sh'
 UNDO = 'sh -c "echo disconnect > /root/.var/app/dev.lizardbyte.app.Sunshine/config/trigger.fifo"'
@@ -54,3 +54,18 @@ def test_set_key_idempotent():
 def test_set_key_does_not_match_key_prefix():
     out = set_key("system_tray_icon = x\n", "system_tray", "disabled")
     assert "system_tray_icon = x" in out.splitlines()
+
+
+def test_remove_drops_only_our_entry():
+    text = merge_prep_cmd('global_prep_cmd = [{"do":"echo hi","undo":"echo bye","elevated":"false"}]\n', DO, UNDO)
+    out = remove_prep_cmd(text, DO)
+    assert [x["do"] for x in _entries(out)] == ["echo hi"]
+
+def test_remove_drops_key_when_nothing_left_and_keeps_other_keys():
+    text = set_key(merge_prep_cmd("", DO, UNDO), "system_tray", "disabled")
+    out = remove_prep_cmd(text, DO)
+    assert _entries(out) is None
+    assert "system_tray = disabled" in out.splitlines()
+
+def test_remove_is_noop_when_absent():
+    assert remove_prep_cmd("port = 47989\n", DO) == "port = 47989\n"

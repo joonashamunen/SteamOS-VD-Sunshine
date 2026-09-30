@@ -4,6 +4,7 @@
 Sunshine's conf is line-based `key = value`; global_prep_cmd's value is a JSON
 array of {do, undo, elevated} objects. We key idempotency on the `do` string.
 Extra `key=value` arguments are set as plain keys (e.g. system_tray=disabled).
+`--remove <conf> <do>` takes our entry out again (used by `svd disable`).
 """
 import json
 import sys
@@ -35,6 +36,28 @@ def merge_prep_cmd(text: str, do: str, undo: str) -> str:
     return result
 
 
+def remove_prep_cmd(text: str, do: str) -> str:
+    """Drop the entry whose `do` matches; drop the key if nothing is left."""
+    out, found = [], False
+    for line in text.splitlines():
+        if line.strip().startswith(KEY) and "=" in line:
+            raw = line.split("=", 1)[1].strip()
+            try:
+                entries = json.loads(raw) if raw else []
+            except json.JSONDecodeError:
+                out.append(line)
+                continue
+            kept = [e for e in entries if e.get("do") != do]
+            found = found or len(kept) != len(entries)
+            if kept:
+                out.append(f"{KEY} = {json.dumps(kept)}")
+            continue
+        out.append(line)
+    if not found:
+        return text
+    return "\n".join(out) + "\n" if out else ""
+
+
 def set_key(text: str, key: str, value: str) -> str:
     """Set a plain `key = value` line, replacing any existing value for key."""
     out = [
@@ -46,8 +69,19 @@ def set_key(text: str, key: str, value: str) -> str:
 
 
 def main(argv):
+    if len(argv) == 4 and argv[1] == "--remove":
+        path, do = argv[2], argv[3]
+        try:
+            with open(path, "r") as f:
+                text = f.read()
+        except FileNotFoundError:
+            return 0
+        with open(path, "w") as f:
+            f.write(remove_prep_cmd(text, do))
+        return 0
     if len(argv) < 4 or any("=" not in a for a in argv[4:]):
-        print("usage: config_merge.py <conf_path> <do> <undo> [key=value ...]", file=sys.stderr)
+        print("usage: config_merge.py <conf_path> <do> <undo> [key=value ...]\n"
+              "       config_merge.py --remove <conf_path> <do>", file=sys.stderr)
         return 2
     path, do, undo = argv[1], argv[2], argv[3]
     try:

@@ -57,10 +57,15 @@ svd <command> [--dry-run]
 | `repair` | Re-apply everything (safe to run any time; restarts the services) |
 | `status` | Health of each component (`sudo svd status` for the full picture) |
 | `check-prereqs` | Check for Decky Loader + Decky Sunshine |
+| `disable` | Switch everything off without uninstalling: virtual display, watchdog, auto-heal, and Sunshine's connect/disconnect commands. Sunshine then streams the physical display |
+| `enable` | Switch it back on (runs `repair`) |
 | `uninstall` | Remove the stack (`--purge` also removes the Sunshine flatpak) |
 | `heal`, `heal-check` | Used by the auto-heal units; not needed by hand |
 
 `--dry-run` prints what `install`/`repair` would change without changing anything.
+
+`install`, `repair`, `disable`, `enable` and `uninstall` need root. `sudo` doesn't
+search `~/.local/bin`, so use `sudo ~/.local/bin/svd <command>`.
 
 ## How it works
 
@@ -74,6 +79,9 @@ svd <command> [--dry-run]
   DRM master away from gamescope (that crashes Game Mode) and keeps the virtual
   display through sleep. gamescope moves between outputs by itself.
 - **`vd-watcher`** bridges the sandboxed Sunshine to the daemon through a FIFO.
+  While a stream runs it also sets gamescope's `GAMESCOPE_COMPOSITE_FORCE` atom:
+  in direct scanout (cursor hidden, gamepad input) Sunshine's KMS capture misses
+  gamescope's colour conversion and the stream turns over-saturated.
 - **`svd-watchdog`** restarts Sunshine (through Decky, so the plugin stays in
   charge) if it crashes while the plugin's toggle is on.
 - **`svd-heal`** runs at boot as root. When the SteamOS build changed, it re-runs

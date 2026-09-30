@@ -71,6 +71,10 @@ heal_install() {
 # Called by the root system unit on each boot.
 heal_run() {
   local here="$1"
+  if svd_is_disabled; then
+    log "svd is disabled (svd enable to turn it back on); skipping auto-heal"
+    return 0
+  fi
   if [ "$(id -u)" -ne 0 ]; then
     log "svd heal must run as root (it is started by svd-heal.service)"
     return 1
@@ -88,6 +92,7 @@ heal_run() {
 
 # Called by the user unit on each login: warn if the root healer is gone.
 heal_check() {
+  svd_is_disabled && return 0
   [ -f "$SYSTEM_UNIT" ] && return 0
   log "WARNING: $SYSTEM_UNIT is missing, so updates will not be auto-repaired. Run: sudo svd repair"
   _notify "Virtual display setup needs repair: run sudo svd repair"

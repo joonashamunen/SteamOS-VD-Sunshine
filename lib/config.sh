@@ -23,3 +23,11 @@ config_apply() {
     || die "config merge failed"
   log "Config applied."
 }
+
+# Take our global_prep_cmd entry out of Sunshine's config (svd disable).
+config_remove() {
+  local here="$1" conf="$APPCFG/sunshine/sunshine.conf"
+  log "Removing svd's connect/disconnect commands from $conf"
+  if [ "$DRY_RUN" = "1" ]; then echo "DRY-RUN would remove global_prep_cmd entry from $conf"; return 0; fi
+  python3 "$here/helpers/config_merge.py" --remove "$conf" "$DO_CMD" || die "config removal failed"
+}
